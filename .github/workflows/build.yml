@@ -8,14 +8,14 @@ name: Build EnigmaHardwareID
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ "**" ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ "**" ]
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build (Win32 / ${{ matrix.config }})
+    name: Build Win32 / ${{ matrix.config }}
     runs-on: windows-2022
 
     strategy:
@@ -25,98 +25,51 @@ jobs:
 
     steps:
       # ── 1. 拉取代码 ─────────────────────────────────────────────
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # ── 2. 安装 MFC ─────────────────────────────────────────────
-      #   windows-2022 runner 自带完整 VS2022 Enterprise，
-      #   只需用 vs_installer 补装 MFC 组件即可，无需重装 BuildTools
-      - name: Install MFC component
-        shell: pwsh
-        run: |
-          # 找到完整 VS（Enterprise/Professional/Community），排除 BuildTools
-          $vsPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" `
-            -latest -requires Microsoft.VisualStudio.Workload.NativeDesktop `
-            -property installationPath
-          if (-not $vsPath) {
-            # fallback：取任意最新安装
-            $vsPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" `
-              -latest -property installationPath
-          }
-          Write-Host "VS installationPath: $vsPath"
-
-          $installer = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
-          & $installer modify `
-            --installPath "$vsPath" `
-            --add Microsoft.VisualStudio.Component.VC.MFC.x86.x64 `
-            --quiet --norestart --force
-          Write-Host "MFC install exit: $LASTEXITCODE"
-
-          # 验证 MFC 头文件确实存在
-          $mfcH = Join-Path $vsPath "VC\Tools\MSVC" | Get-ChildItem -Directory |
-            Select-Object -Last 1 |
-            ForEach-Object { Join-Path $_.FullName "atlmfc\include\afxwin.h" }
-          if (Test-Path $mfcH) {
-            Write-Host "✅ MFC verified: $mfcH"
-          } else {
-            Write-Host "❌ MFC header NOT found at expected path"
-            # 搜索实际位置供调试
-            Get-ChildItem "C:\Program Files (x86)\Microsoft Visual Studio" -Recurse -Filter "afxwin.h" -ErrorAction SilentlyContinue |
-              Select-Object -First 5 | ForEach-Object { Write-Host "  Found: $_" }
-          }
-
-      # ── 3. 设置 MSBuild 路径（指向完整 VS，非 BuildTools） ──────
-      - name: Add MSBuild to PATH
+      # ── 2. 加 MSBuild 到 PATH ────────────────────────────────────
+      - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
-        with:
-          vs-prerelease: false
-          msbuild-architecture: x86
 
-      # ── 4. 确保 vcpkg git history 完整（baseline 查找需要） ──────
-      - name: Fetch vcpkg history
-        shell: pwsh
-        run: |
-          cd C:\vcpkg
-          git fetch --unshallow 2>$null; git fetch origin 2>$null
-          Write-Host "vcpkg commit: $(git rev-parse HEAD)"
-
-      # ── 5. 缓存 vcpkg ───────────────────────────────────────────
+      # ── 3. 缓存 vcpkg 已安装包 ──────────────────────────────────
+      #   key 绑定 vcpkg.json，依赖没变就直接复用缓存
       - name: Cache vcpkg
         id: cache-vcpkg
         uses: actions/cache@v4
         with:
-          path: |
-            C:\vcpkg\installed
-            C:\vcpkg\packages
-          key: vcpkg-win32-spdlog-${{ hashFiles('EnigmaHardwareID/vcpkg.json') }}
-          restore-keys: |
-            vcpkg-win32-spdlog-
+          path: C:\vcpkg\installed
+          key: vcpkg-x86-windows-${{ hashFiles('EnigmaHardwareID/vcpkg.json') }}
+          restore-keys: vcpkg-x86-windows-
 
-      # ── 5. 安装 vcpkg 依赖 ──────────────────────────────────────
-      - name: Install vcpkg dependencies
+      # ── 4. 安装 spdlog（缓存未命中时才真正编译） ────────────────
+      - name: Install vcpkg deps
         if: steps.cache-vcpkg.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           cd C:\vcpkg
-          git pull
-          .\vcpkg install spdlog[wchar]:x86-windows --recurse
+          git pull --ff-only
+          .\vcpkg install spdlog[wchar]:x86-windows
           .\vcpkg integrate install
 
-      - name: vcpkg integrate (cached)
+      # 缓存命中也要 integrate，让 MSBuild 找到头文件和 .lib
+      - name: vcpkg integrate (from cache)
         if: steps.cache-vcpkg.outputs.cache-hit == 'true'
         shell: pwsh
         run: C:\vcpkg\vcpkg integrate install
 
-      # ── 6. 工具集 v141 → v143 ───────────────────────────────────
-      - name: Patch toolset v141 → v143
+      # ── 5. 工具集 v141 → v143（runner 上只有 VS2022） ───────────
+      - name: Patch PlatformToolset v141 → v143
         shell: pwsh
         run: |
-          $proj = "EnigmaHardwareID\EnigmaHardwareID.vcxproj"
-          (Get-Content $proj) -replace 'v141', 'v143' | Set-Content $proj
-          Write-Host "Toolset patched to v143"
+          $f = "EnigmaHardwareID\EnigmaHardwareID.vcxproj"
+          (Get-Content $f -Raw) -replace '<PlatformToolset>v141</PlatformToolset>',
+                                          '<PlatformToolset>v143</PlatformToolset>' |
+            Set-Content $f -Encoding UTF8
+          Write-Host "Toolset patched"
 
-      # ── 7. 执行构建 ─────────────────────────────────────────────
-      - name: Build ${{ matrix.config }}
+      # ── 6. 编译 ─────────────────────────────────────────────────
+      - name: Build ${{ matrix.config }}|Win32
         shell: pwsh
         run: |
           msbuild EnigmaHardwareID.sln `
@@ -126,14 +79,26 @@ jobs:
             /v:minimal `
             /nologo
 
-      # ── 8. 上传产物（Release） ───────────────────────────────────
-      - name: Upload artifact
-        if: matrix.config == 'Release'
+      # ── 7. 确认产物路径存在 ──────────────────────────────────────
+      #   vcxproj 里 OutDir = $(SolutionDir)bin\$(Configuration)\
+      #   → 相对 .sln 所在目录 = bin\Release\ 或 bin\Debug\
+      - name: Show output files
+        shell: pwsh
+        run: |
+          $dir = "bin\${{ matrix.config }}"
+          if (Test-Path $dir) {
+            Get-ChildItem $dir | Select-Object Name, Length
+          } else {
+            Write-Host "Output dir not found: $dir"
+            exit 1
+          }
+
+      # ── 8. 上传产物 ──────────────────────────────────────────────
+      - name: Upload ${{ matrix.config }} artifact
         uses: actions/upload-artifact@v4
         with:
-          name: EnigmaHardwareID-Win32-Release
-          path: |
-            EnigmaHardwareID\Release\EnigmaHardwareID.exe
-            EnigmaHardwareID\Release\*.dll
-          if-no-files-found: warn
-          retention-days: 30
+          name: EnigmaHardwareID-Win32-${{ matrix.config }}
+          # vcxproj OutDir = $(SolutionDir)bin\$(Configuration)\
+          path: bin/${{ matrix.config }}/EnigmaHardwareID.exe
+          if-no-files-found: error   # 找不到 exe 就让 CI 明确失败
+          retention-days: 90
