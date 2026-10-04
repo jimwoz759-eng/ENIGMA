@@ -1,6 +1,6 @@
 # ╔══════════════════════════════════════════════════════════════════╗
 # ║  EnigmaHardwareID — GitHub Actions CI/CD                       ║
-# ║  平台：Win32 (x86)  工具集：v141(VS2017) / v143(VS2022)        ║
+# ║  平台：Win32 (x86)  工具集：v143(VS2022)                       ║
 # ║  MFC：动态 (_AFXDLL)  字符集：MBCS  依赖：spdlog (vcpkg)       ║
 # ╚══════════════════════════════════════════════════════════════════╝
 
@@ -11,12 +11,12 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch:   # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   build:
     name: Build (Win32 / ${{ matrix.config }})
-    runs-on: windows-latest   # Windows Server 2022，含 VS2022
+    runs-on: windows-2022
 
     strategy:
       fail-fast: false
@@ -27,28 +27,23 @@ jobs:
       # ── 1. 拉取代码 ─────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      # ── 2. 设置 MSBuild 路径 ────────────────────────────────────
+      # ── 2. 安装 MFC（用 vs_buildtools，最可靠） ─────────────────
+      - name: Install MFC via vs_buildtools
+        shell: cmd
+        run: |
+          curl -fsSL -o vs_buildtools.exe https://aka.ms/vs/17/release/vs_buildtools.exe
+          vs_buildtools.exe --quiet --wait --norestart --nocache ^
+            --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 ^
+            --add Microsoft.VisualStudio.Component.VC.MFC.x86.x64 ^
+            --add Microsoft.VisualStudio.Component.Windows10SDK.20348
+          echo MFC install exit: %ERRORLEVEL%
+
+      # ── 3. 设置 MSBuild 路径 ────────────────────────────────────
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
-      # ── 3. 安装 MFC（x86）── GitHub runner 默认不含 MFC ─────────
-      - name: Install MFC (x86)
-        shell: pwsh
-        run: |
-          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
-            -latest -property installationPath
-          Write-Host "VS Path: $vsPath"
-          # 补装 MFC（含 x86/x64）
-          & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe" modify `
-            --installPath "$vsPath" `
-            --add "Microsoft.VisualStudio.Component.VC.MFC.x86.x64" `
-            --quiet --norestart --force
-          Write-Host "MFC install done (exit: $LASTEXITCODE)"
-
-      # ── 4. 缓存 vcpkg（避免每次重新编译 spdlog） ────────────────
+      # ── 4. 缓存 vcpkg ───────────────────────────────────────────
       - name: Cache vcpkg
         id: cache-vcpkg
         uses: actions/cache@v4
@@ -60,7 +55,7 @@ jobs:
           restore-keys: |
             vcpkg-win32-spdlog-
 
-      # ── 4. 安装 vcpkg 依赖（spdlog:x86-windows） ────────────────
+      # ── 5. 安装 vcpkg 依赖（spdlog:x86-windows） ────────────────
       - name: Install vcpkg dependencies
         if: steps.cache-vcpkg.outputs.cache-hit != 'true'
         shell: pwsh
@@ -73,19 +68,17 @@ jobs:
       - name: vcpkg integrate (cached)
         if: steps.cache-vcpkg.outputs.cache-hit == 'true'
         shell: pwsh
-        run: |
-          C:\vcpkg\vcpkg integrate install
+        run: C:\vcpkg\vcpkg integrate install
 
-      # ── 5. 将工具集从 v141 升级为 v143（VS2022 runner 上无 v141）─
-      #       在 CI 里用 sed 替换，不修改仓库源文件
-      - name: Patch toolset v141 → v143 for CI runner
+      # ── 6. 工具集 v141 → v143 ───────────────────────────────────
+      - name: Patch toolset v141 → v143
         shell: pwsh
         run: |
           $proj = "EnigmaHardwareID\EnigmaHardwareID.vcxproj"
           (Get-Content $proj) -replace 'v141', 'v143' | Set-Content $proj
           Write-Host "Toolset patched to v143"
 
-      # ── 6. 执行构建 ─────────────────────────────────────────────
+      # ── 7. 执行构建 ─────────────────────────────────────────────
       - name: Build ${{ matrix.config }}
         shell: pwsh
         run: |
@@ -98,7 +91,7 @@ jobs:
             /v:minimal `
             /nologo
 
-      # ── 7. 上传产物（Release 版本） ─────────────────────────────
+      # ── 8. 上传产物（Release） ───────────────────────────────────
       - name: Upload artifact
         if: matrix.config == 'Release'
         uses: actions/upload-artifact@v4
