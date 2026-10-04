@@ -28,20 +28,49 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 2. 安装 MFC（用 vs_buildtools，最可靠） ─────────────────
-      - name: Install MFC via vs_buildtools
-        shell: cmd
+      # ── 2. 安装 MFC ─────────────────────────────────────────────
+      #   windows-2022 runner 自带完整 VS2022 Enterprise，
+      #   只需用 vs_installer 补装 MFC 组件即可，无需重装 BuildTools
+      - name: Install MFC component
+        shell: pwsh
         run: |
-          curl -fsSL -o vs_buildtools.exe https://aka.ms/vs/17/release/vs_buildtools.exe
-          vs_buildtools.exe --quiet --wait --norestart --nocache ^
-            --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 ^
-            --add Microsoft.VisualStudio.Component.VC.MFC.x86.x64 ^
-            --add Microsoft.VisualStudio.Component.Windows10SDK.20348
-          echo MFC install exit: %ERRORLEVEL%
+          # 找到完整 VS（Enterprise/Professional/Community），排除 BuildTools
+          $vsPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" `
+            -latest -requires Microsoft.VisualStudio.Workload.NativeDesktop `
+            -property installationPath
+          if (-not $vsPath) {
+            # fallback：取任意最新安装
+            $vsPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" `
+              -latest -property installationPath
+          }
+          Write-Host "VS installationPath: $vsPath"
 
-      # ── 3. 设置 MSBuild 路径 ────────────────────────────────────
+          $installer = "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vs_installer.exe"
+          & $installer modify `
+            --installPath "$vsPath" `
+            --add Microsoft.VisualStudio.Component.VC.MFC.x86.x64 `
+            --quiet --norestart --force
+          Write-Host "MFC install exit: $LASTEXITCODE"
+
+          # 验证 MFC 头文件确实存在
+          $mfcH = Join-Path $vsPath "VC\Tools\MSVC" | Get-ChildItem -Directory |
+            Select-Object -Last 1 |
+            ForEach-Object { Join-Path $_.FullName "atlmfc\include\afxwin.h" }
+          if (Test-Path $mfcH) {
+            Write-Host "✅ MFC verified: $mfcH"
+          } else {
+            Write-Host "❌ MFC header NOT found at expected path"
+            # 搜索实际位置供调试
+            Get-ChildItem "C:\Program Files (x86)\Microsoft Visual Studio" -Recurse -Filter "afxwin.h" -ErrorAction SilentlyContinue |
+              Select-Object -First 5 | ForEach-Object { Write-Host "  Found: $_" }
+          }
+
+      # ── 3. 设置 MSBuild 路径（指向完整 VS，非 BuildTools） ──────
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
+        with:
+          vs-prerelease: false
+          msbuild-architecture: x86
 
       # ── 4. 缓存 vcpkg ───────────────────────────────────────────
       - name: Cache vcpkg
@@ -55,7 +84,7 @@ jobs:
           restore-keys: |
             vcpkg-win32-spdlog-
 
-      # ── 5. 安装 vcpkg 依赖（spdlog:x86-windows） ────────────────
+      # ── 5. 安装 vcpkg 依赖 ──────────────────────────────────────
       - name: Install vcpkg dependencies
         if: steps.cache-vcpkg.outputs.cache-hit != 'true'
         shell: pwsh
