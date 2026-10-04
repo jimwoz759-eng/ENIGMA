@@ -120,6 +120,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <!-- spdlog/fmt 要求 UTF-8 源码编译 -->
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <!-- _AFXDLL (动态 MFC) 强制要求 /MD；不得使用 /MT -->
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -151,6 +153,8 @@
       <AdditionalIncludeDirectories>$(ProjectDir);$(VcpkgRoot)installed\x86-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <!-- spdlog/fmt 要求 UTF-8 源码编译 -->
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <!-- _AFXDLL (动态 MFC) 强制要求 /MDd；不得使用 /MTd -->
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
