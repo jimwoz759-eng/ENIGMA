@@ -43,31 +43,7 @@
 #include <vector>   // [O10]
 #include <array>    // [O06]
 
-// ── 存储设备查询结构（兼容旧 SDK 版本的兜底定义）──────────
-typedef enum _STORAGE_PROPERTY_ID {
-    StorageDeviceProperty = 0,
-    StorageAdapterProperty,
-    StorageDeviceIdProperty
-} STORAGE_PROPERTY_ID, *PSTORAGE_PROPERTY_ID;
-
-typedef enum _STORAGE_QUERY_TYPE {
-    PropertyStandardQuery = 0,
-    PropertyExistsQuery,
-    PropertyMaskQuery,
-    PropertyQueryMaxDefined
-} STORAGE_QUERY_TYPE, *PSTORAGE_QUERY_TYPE;
-
-typedef struct _STORAGE_PROPERTY_QUERY {
-    int   PropertyId;
-    int   QueryType;
-    UCHAR AdditionalParameters[1];
-} STORAGE_PROPERTY_QUERY, *PSTORAGE_PROPERTY_QUERY;
-
-typedef struct _STORAGE_DESCRIPTOR_HEADER {
-    DWORD Version;
-    DWORD Size;
-} STORAGE_DESCRIPTOR_HEADER, *PSTORAGE_DESCRIPTOR_HEADER;
-
+// 存储设备查询结构由 <winioctl.h> 提供，无需重复定义
 #ifndef IOCTL_STORAGE_QUERY_PROPERTY
 #  define IOCTL_STORAGE_QUERY_PROPERTY \
      CTL_CODE(IOCTL_STORAGE_BASE, 0x0500, METHOD_BUFFERED, FILE_ANY_ACCESS)

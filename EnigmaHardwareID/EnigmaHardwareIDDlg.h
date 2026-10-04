@@ -36,6 +36,11 @@ public:
     int  DecodeString (char* ToDecode, char* destination);
     int  EncodeToString(char* ToEncode, int enlen, char* destination);
 
+    // [O06] CRC 查找表 — public 以便全局 CRC32() 辅助函数访问
+    static std::array<uint32_t, 256> s_crcTable;
+    static bool                       s_crcTableReady;
+    static void EnsureCRCTable();
+
 // ── 重写 ──────────────────────────────────────────────────────────────────
 protected:
     virtual void DoDataExchange(CDataExchange* pDX);
@@ -56,11 +61,6 @@ protected:
 
     // [O01] CRC 结果表：原全局变量 → 私有成员
     std::array<uint32_t, 8> m_valuesTable{};
-
-    // [O06] 静态 CRC32 查找表（只初始化一次）
-    static std::array<uint32_t, 256> s_crcTable;
-    static bool                       s_crcTableReady;
-    static void EnsureCRCTable();
 
     // ── 硬件采集（[O05] 返回 bool 表示是否成功）──────────────
     bool GetHDDString_();
