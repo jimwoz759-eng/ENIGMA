@@ -72,7 +72,15 @@ jobs:
           vs-prerelease: false
           msbuild-architecture: x86
 
-      # ── 4. 缓存 vcpkg ───────────────────────────────────────────
+      # ── 4. 确保 vcpkg git history 完整（baseline 查找需要） ──────
+      - name: Fetch vcpkg history
+        shell: pwsh
+        run: |
+          cd C:\vcpkg
+          git fetch --unshallow 2>$null; git fetch origin 2>$null
+          Write-Host "vcpkg commit: $(git rev-parse HEAD)"
+
+      # ── 5. 缓存 vcpkg ───────────────────────────────────────────
       - name: Cache vcpkg
         id: cache-vcpkg
         uses: actions/cache@v4
