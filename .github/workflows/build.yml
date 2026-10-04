@@ -114,10 +114,6 @@ jobs:
           msbuild EnigmaHardwareID.sln `
             /p:Configuration=${{ matrix.config }} `
             /p:Platform=Win32 `
-            /p:VcpkgEnabled=true `
-            /p:VcpkgEnableManifest=true `
-            /p:VcpkgTriplet=x86-windows `
-            /p:VcpkgManifestInstall=true `
             /m `
             /v:minimal `
             /nologo

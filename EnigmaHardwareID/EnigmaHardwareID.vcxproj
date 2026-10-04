@@ -30,9 +30,11 @@
     <ProjectGuid>{A3F5C2B1-4E6D-4A8F-9C3E-7B2D5F1A8E4C}</ProjectGuid>
     <RootNamespace>EnigmaHardwareID</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
-    <!-- vcpkg 集成（需先运行 vcpkg integrate install） -->
+    <!-- vcpkg 集成（manifest 模式，依赖声明在 vcpkg.json） -->
     <VcpkgEnabled>true</VcpkgEnabled>
     <VcpkgTriplet>x86-windows</VcpkgTriplet>
+    <VcpkgEnableManifest>true</VcpkgEnableManifest>
+    <VcpkgManifestInstall>true</VcpkgManifestInstall>
     <Keyword>MFCProj</Keyword>
   </PropertyGroup>
 
