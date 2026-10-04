@@ -1,1 +1,97 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║  EnigmaHardwareID — GitHub Actions CI/CD                       ║
+# ║  平台：Win32 (x86)  工具集：v141(VS2017) / v143(VS2022)        ║
+# ║  MFC：动态 (_AFXDLL)  字符集：MBCS  依赖：spdlog (vcpkg)       ║
+# ╚══════════════════════════════════════════════════════════════════╝
 
+name: Build EnigmaHardwareID
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:   # 允许手动触发
+
+jobs:
+  build:
+    name: Build (Win32 / ${{ matrix.config }})
+    runs-on: windows-latest   # Windows Server 2022，含 VS2022
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [Debug, Release]
+
+    steps:
+      # ── 1. 拉取代码 ─────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── 2. 设置 MSBuild 路径 ────────────────────────────────────
+      - name: Add MSBuild to PATH
+        uses: microsoft/setup-msbuild@v2
+
+      # ── 3. 缓存 vcpkg（避免每次重新编译 spdlog） ────────────────
+      - name: Cache vcpkg
+        id: cache-vcpkg
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\vcpkg\installed
+            C:\vcpkg\packages
+          key: vcpkg-win32-spdlog-${{ hashFiles('EnigmaHardwareID/vcpkg.json') }}
+          restore-keys: |
+            vcpkg-win32-spdlog-
+
+      # ── 4. 安装 vcpkg 依赖（spdlog:x86-windows） ────────────────
+      - name: Install vcpkg dependencies
+        if: steps.cache-vcpkg.outputs.cache-hit != 'true'
+        shell: pwsh
+        run: |
+          cd C:\vcpkg
+          git pull
+          .\vcpkg install spdlog[wchar]:x86-windows --recurse
+          .\vcpkg integrate install
+
+      - name: vcpkg integrate (cached)
+        if: steps.cache-vcpkg.outputs.cache-hit == 'true'
+        shell: pwsh
+        run: |
+          C:\vcpkg\vcpkg integrate install
+
+      # ── 5. 将工具集从 v141 升级为 v143（VS2022 runner 上无 v141）─
+      #       在 CI 里用 sed 替换，不修改仓库源文件
+      - name: Patch toolset v141 → v143 for CI runner
+        shell: pwsh
+        run: |
+          $proj = "EnigmaHardwareID\EnigmaHardwareID.vcxproj"
+          (Get-Content $proj) -replace 'v141', 'v143' | Set-Content $proj
+          Write-Host "Toolset patched to v143"
+
+      # ── 6. 执行构建 ─────────────────────────────────────────────
+      - name: Build ${{ matrix.config }}
+        shell: pwsh
+        run: |
+          msbuild EnigmaHardwareID.sln `
+            /p:Configuration=${{ matrix.config }} `
+            /p:Platform=Win32 `
+            /p:VcpkgEnabled=true `
+            /p:VcpkgTriplet=x86-windows `
+            /m `
+            /v:minimal `
+            /nologo
+
+      # ── 7. 上传产物（Release 版本） ─────────────────────────────
+      - name: Upload artifact
+        if: matrix.config == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: EnigmaHardwareID-Win32-Release
+          path: |
+            EnigmaHardwareID\Release\EnigmaHardwareID.exe
+            EnigmaHardwareID\Release\*.dll
+          if-no-files-found: warn
+          retention-days: 30
