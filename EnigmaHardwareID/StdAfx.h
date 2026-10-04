@@ -27,21 +27,6 @@
 #  endif
 #endif
 
-// ── fmt header-only 模式 ─────────────────────────────────────
-// 强制 fmt 以 header-only 方式编译进 .exe，彻底消除对 fmt.dll 的运行时依赖。
-// 必须在任何 spdlog / fmt 头文件之前定义。
-// 原理：
-//   FMT_HEADER_ONLY        → fmt 的所有实现都内联在头文件里，不链接 fmt.lib/fmt.dll
-//   SPDLOG_FMT_EXTERNAL    → 告知 spdlog 使用外部 fmt（即上面那份 header-only fmt）
-//                            而非 spdlog 自带的 bundled fmt，两者路径一致即可
-#ifndef FMT_HEADER_ONLY
-#  define FMT_HEADER_ONLY
-#endif
-#ifndef SPDLOG_FMT_EXTERNAL
-#  define SPDLOG_FMT_EXTERNAL
-#endif
-// ────────────────────────────────────────────────────────────
-
 // Header-only 引入（vcpkg 或手动放置 include/spdlog/）
 #include <spdlog/spdlog.h>
 // ────────────────────────────────────────────────────────────
