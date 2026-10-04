@@ -34,7 +34,21 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
-      # ── 3. 缓存 vcpkg（避免每次重新编译 spdlog） ────────────────
+      # ── 3. 安装 MFC（x86）── GitHub runner 默认不含 MFC ─────────
+      - name: Install MFC (x86)
+        shell: pwsh
+        run: |
+          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
+            -latest -property installationPath
+          Write-Host "VS Path: $vsPath"
+          # 补装 MFC（含 x86/x64）
+          & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe" modify `
+            --installPath "$vsPath" `
+            --add "Microsoft.VisualStudio.Component.VC.MFC.x86.x64" `
+            --quiet --norestart --force
+          Write-Host "MFC install done (exit: $LASTEXITCODE)"
+
+      # ── 4. 缓存 vcpkg（避免每次重新编译 spdlog） ────────────────
       - name: Cache vcpkg
         id: cache-vcpkg
         uses: actions/cache@v4
