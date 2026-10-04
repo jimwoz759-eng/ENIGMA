@@ -121,9 +121,10 @@ jobs:
           Write-Host "/Wall + static CRT + static triplet injected"
 
       # ── 8. 编译，日志同时输出到终端和文件 ───────────────────────
-      #   /v:detailed ：完整详细日志（含每个 cl.exe 命令行参数）
-      #   /flp        ：同步写入 build.log 文件（UTF-8，含警告/错误行）
-      #   Tee-Object  ：让日志实时显示在 Actions 面板，同时写文件
+      #   /v:detailed  ：完整详细日志（含每个 cl.exe 命令行参数）
+      #   Tee-Object   ：实时显示在 Actions 面板，同时落盘到 .log
+      #   ⚠ 不能同时用 /flp 和 Tee-Object 写同一文件 → 文件锁冲突
+      #   $pipeStat    ：PowerShell 7 管道各段退出码数组，[0] 是 msbuild
       - name: Build ${{ matrix.config }}|Win32
         shell: pwsh
         run: |
@@ -133,11 +134,10 @@ jobs:
             /p:Platform=Win32 `
             /m `
             /v:detailed `
-            /nologo `
-            "/flp:LogFile=$logFile;Verbosity=detailed;Encoding=UTF-8" |
-            Tee-Object -FilePath $logFile -Append
-          # 保留 msbuild 真实退出码（Tee-Object 会覆盖 $LASTEXITCODE）
-          exit $LASTEXITCODE
+            /nologo |
+            Tee-Object -FilePath $logFile
+          # $pipeStat[0] 是管道第一段（msbuild）的真实退出码
+          exit $pipeStat[0].ExitCode
 
       # ── 9. 从日志提取 warning/error 摘要并打印到 Actions 面板 ──
       #   即使编译失败也运行（if: always()），方便排错
