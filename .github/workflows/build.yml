@@ -166,13 +166,15 @@ jobs:
           }
 
       # ── 11. 上传编译产物 + 日志 ─────────────────────────────────
+      #   打包 bin 目录全部文件（含可能存在的 fmt.dll / spdlog.dll）
+      #   + 构建日志，方便离线排查
       - name: Upload artifact + build log
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: EnigmaHardwareID-Win32-${{ matrix.config }}
           path: |
-            bin/${{ matrix.config }}/EnigmaHardwareID.exe
+            bin/${{ matrix.config }}/
             build-${{ matrix.config }}.log
           if-no-files-found: warn
           retention-days: 90
