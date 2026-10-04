@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  EnigmaHardwareID.vcxproj — VS2017/2019/2022 项目文件
+  ========================================================
+  从 VC6 (.dsp) 迁移而来
+  目标平台：Win32 (x86)
+  MFC：动态链接 (_AFXDLL)
+  字符集：多字节 (MBCS)，与原始代码兼容
+  C++ 标准：C++17
+  spdlog：通过 vcpkg 管理（见 vcpkg.json）
+-->
+<Project DefaultTargets="Build" ToolsVersion="15.0"
+         xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- ── 配置平台矩阵 ─────────────────────────────── -->
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+
+  <!-- ── 全局属性 ──────────────────────────────────── -->
+  <PropertyGroup Label="Globals">
+    <!-- 使用 `python -c "import uuid; print(uuid.uuid4())"` 重新生成 -->
+    <ProjectGuid>{A3F5C2B1-4E6D-4A8F-9C3E-7B2D5F1A8E4C}</ProjectGuid>
+    <RootNamespace>EnigmaHardwareID</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <!-- vcpkg 集成（需先运行 vcpkg integrate install） -->
+    <VcpkgEnabled>true</VcpkgEnabled>
+    <VcpkgTriplet>x86-windows</VcpkgTriplet>
+    <Keyword>MFCProj</Keyword>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+
+  <!-- ── Release|Win32 基础属性 ──────────────────── -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'"
+                 Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>   <!-- v141=VS2017, v142=VS2019, v143=VS2022 -->
+    <CharacterSet>MultiByte</CharacterSet>
+    <UseOfMfc>Dynamic</UseOfMfc>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+
+  <!-- ── Debug|Win32 基础属性 ────────────────────── -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'"
+                 Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <UseOfMfc>Dynamic</UseOfMfc>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="Shared" />
+
+  <!-- ── 属性表 ────────────────────────────────────── -->
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"
+            Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')"
+            Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props"
+            Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')"
+            Label="LocalAppDataPlatform" />
+  </ImportGroup>
+
+  <!-- ── 用户宏 ────────────────────────────────────── -->
+  <PropertyGroup Label="UserMacros" />
+
+  <!-- ── Release 输出目录 ─────────────────────────── -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+
+  <!-- ── Debug 输出目录 ───────────────────────────── -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(SolutionDir)bin\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)obj\$(ProjectName)\$(Configuration)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!--  Release 编译/链接选项                          -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <!-- C++17 → 支持 std::unique_ptr, lambda, <cstdint> 等 -->
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_AFXDLL;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <!-- spdlog Release 模式：关闭 debug 级别日志（提升性能） -->
+      <PreprocessorDefinitions>SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_INFO;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <!--
+        spdlog include 路径（任选其一）：
+          vcpkg 托管：$(VcpkgRoot)installed\x86-windows\include
+          手动解压：$(ProjectDir)third_party\spdlog-1.x.x\include
+      -->
+      <AdditionalIncludeDirectories>$(ProjectDir);$(VcpkgRoot)installed\x86-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <!-- spdlog 编译库模式需要链接（Header-Only 模式则不需要） -->
+      <!-- <AdditionalDependencies>spdlog.lib;%(AdditionalDependencies)</AdditionalDependencies> -->
+    </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>NDEBUG;_AFXDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!--  Debug 编译/链接选项                            -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_AFXDLL;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <!-- spdlog Debug 模式：保留 debug 级别日志 -->
+      <PreprocessorDefinitions>SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(ProjectDir);$(VcpkgRoot)installed\x86-windows\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <ResourceCompile>
+      <PreprocessorDefinitions>_DEBUG;_AFXDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ResourceCompile>
+  </ItemDefinitionGroup>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!--  源文件列表                                      -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <ItemGroup>
+    <!-- 预编译头源文件：必须设置 Create，其他 .cpp 设置 Use -->
+    <ClCompile Include="StdAfx.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="EnigmaHardwareID.cpp" />
+    <ClCompile Include="EnigmaHardwareIDDlg.cpp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ClInclude Include="config.h" />
+    <ClInclude Include="EnigmaHardwareID.h" />
+    <ClInclude Include="EnigmaHardwareIDDlg.h" />
+    <ClInclude Include="logger.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="StdAfx.h" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ResourceCompile Include="EnigmaHardwareID.rc" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="vcpkg.json" />
+  </ItemGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+
+</Project>

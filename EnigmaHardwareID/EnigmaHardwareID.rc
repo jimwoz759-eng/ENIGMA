@@ -1,0 +1,225 @@
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#include "afxres.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// English (U.S.) resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
+#pragma code_page(1252)
+#endif //_WIN32
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#include ""afxres.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#define _AFX_NO_SPLITTER_RESOURCES\r\n"
+    "#define _AFX_NO_OLE_RESOURCES\r\n"
+    "#define _AFX_NO_TRACKER_RESOURCES\r\n"
+    "#define _AFX_NO_PROPERTY_RESOURCES\r\n"
+    "\r\n"
+    "#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)\r\n"
+    "#ifdef _WIN32\r\n"
+    "LANGUAGE 9, 1\r\n"
+    "#pragma code_page(1252)\r\n"
+    "#endif //_WIN32\r\n"
+    "#include ""res\\EnigmaHardwareID.rc2""  // non-Microsoft Visual C++ edited resources\r\n"
+    "#include ""afxres.rc""         // Standard components\r\n"
+    "#endif\r\n"
+    "\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+IDR_MAINFRAME           ICON    DISCARDABLE     "res\\EnigmaHardwareID.ico"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ENIGMAHARDWAREID_DIALOG DIALOGEX 0, 0, 510, 393
+STYLE DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_APPWINDOW
+CAPTION "EnigmaHardwareID"
+FONT 8, "MS Sans Serif"
+BEGIN
+    CONTROL         "Windows serial number:",IDC_WSNCB,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,22,293,91,10
+    EDITTEXT        IDC_EDIT10,21,303,202,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Get HWID info",IDC_GETBUTTON,18,8,61,14
+    EDITTEXT        IDC_EDIT11,228,301,40,14,ES_AUTOHSCROLL
+    CONTROL         "Computer name:",IDC_COMPNCB,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,21,145,67,10
+    EDITTEXT        IDC_EDIT1,20,156,202,14,ES_AUTOHSCROLL
+    LTEXT           "CRC32:",IDC_STATIC,229,142,26,8
+    EDITTEXT        IDC_EDIT2,227,153,40,14,ES_AUTOHSCROLL
+    CONTROL         "CPU type:",IDC_CPUTCB,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,21,178,48,10
+    EDITTEXT        IDC_EDIT3,19,188,202,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT4,227,186,40,14,ES_AUTOHSCROLL
+    CONTROL         "HDD serial number:",IDC_HDDSNCB,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,23,321,77,10
+    EDITTEXT        IDC_EDIT12,22,331,202,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT13,229,329,40,14,ES_AUTOHSCROLL
+    CONTROL         "Motherboard:",IDC_MOTHERCB,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,21,233,58,10
+    EDITTEXT        IDC_EDIT6,14,245,489,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT7,227,227,40,14,ES_AUTOHSCROLL
+    CONTROL         "User name:",IDC_USERNCB,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,21,349,52,10
+    EDITTEXT        IDC_EDIT14,19,360,202,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT15,227,357,40,14,ES_AUTOHSCROLL
+    CONTROL         "System Volume Serial Number - Dword:",IDC_SVSNCB,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,19,205,139,10
+    EDITTEXT        IDC_EDIT5,18,216,121,14,ES_AUTOHSCROLL
+    CONTROL         "System Volume Name",IDC_SVNCB,"Button",BS_AUTOCHECKBOX | 
+                    WS_TABSTOP,21,260,85,10
+    EDITTEXT        IDC_EDIT8,20,271,205,14,ES_AUTOHSCROLL
+    EDITTEXT        IDC_EDIT9,230,270,40,14,ES_AUTOHSCROLL
+    CONTROL         "0x200 empty chars",IDC_0x200EMPTY,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,86,232,75,10
+    LTEXT           "Public RSA key:",IDC_STATIC,19,80,52,8
+    EDITTEXT        IDC_RSAKEY,18,89,468,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Demo Rsa key",IDC_GETTRIALKEY,88,71,67,14
+    LTEXT           "RC4 key:",IDC_STATIC,21,113,30,8
+    EDITTEXT        IDC_RC4Key,19,122,464,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Extact RC4 key from RSA",IDC_EXTRACTRC4KEYFROMRSA,96,
+                    105,96,14
+    LTEXT           "HWID",IDC_STATIC,97,7,21,8
+    EDITTEXT        IDC_HARDWAREID,93,16,232,14,ES_AUTOHSCROLL
+    PUSHBUTTON      "Decode HWID",IDC_DECODEHWID,19,44,57,14
+    LTEXT           "INFO",IDC_INFO,169,74,107,8
+    PUSHBUTTON      "Gen HWID",IDC_GENHWID,18,26,60,14
+    LTEXT           "Plain data:",IDC_STATIC,95,33,34,8
+    EDITTEXT        IDC_EDIT16,93,42,232,14,ES_AUTOHSCROLL
+    CONTROL         "Check used (decode)",IDC_CHECKUSED,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,92,58,84,10
+    CONTROL         "Insert - (hwid gen)",IDC_INSERTSEP,"Button",
+                    BS_AUTOCHECKBOX | WS_TABSTOP,179,57,72,10
+END
+
+
+#ifndef _MAC
+/////////////////////////////////////////////////////////////////////////////
+//
+// Version
+//
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION 1,0,0,1
+ PRODUCTVERSION 1,0,0,1
+ FILEFLAGSMASK 0x3fL
+#ifdef _DEBUG
+ FILEFLAGS 0x1L
+#else
+ FILEFLAGS 0x0L
+#endif
+ FILEOS 0x4L
+ FILETYPE 0x1L
+ FILESUBTYPE 0x0L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904B0"
+        BEGIN
+            VALUE "CompanyName", "\0"
+            VALUE "FileDescription", "EnigmaHardwareID MFC Application\0"
+            VALUE "FileVersion", "1, 0, 0, 1\0"
+            VALUE "InternalName", "EnigmaHardwareID\0"
+            VALUE "LegalCopyright", "Copyright (C) 2023\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "EnigmaHardwareID.EXE\0"
+            VALUE "ProductName", "EnigmaHardwareID Application\0"
+            VALUE "ProductVersion", "1, 0, 0, 1\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1200
+    END
+END
+
+#endif    // !_MAC
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_ENIGMAHARDWAREID_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 503
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 386
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+#endif    // English (U.S.) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+#define _AFX_NO_SPLITTER_RESOURCES
+#define _AFX_NO_OLE_RESOURCES
+#define _AFX_NO_TRACKER_RESOURCES
+#define _AFX_NO_PROPERTY_RESOURCES
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+#ifdef _WIN32
+LANGUAGE 9, 1
+#pragma code_page(1252)
+#endif //_WIN32
+#include "res\EnigmaHardwareID.rc2"  // non-Microsoft Visual C++ edited resources
+#include "afxres.rc"         // Standard components
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

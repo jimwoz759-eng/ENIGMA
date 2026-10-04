@@ -1,0 +1,15 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "enigmahardwareid",
+  "version": "1.0.0",
+  "description": "Hardware fingerprint tool modernized from VC6 to VS2017+",
+  "dependencies": [
+    {
+      "name": "spdlog",
+      "version>=": "1.12.0",
+      "features": ["wchar"]
+    }
+  ],
+  "builtin-baseline": "dacf5f0c0a9bdf6a4ef3f5c5e6f5f3b2e7f6f1a0",
+  "overrides": []
+}
