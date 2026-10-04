@@ -68,31 +68,59 @@ jobs:
             Set-Content $f -Encoding UTF8
           Write-Host "Toolset patched to v143"
 
-      # ── 6. 注入 /Wall + /WX- 到 vcxproj ────────────────────────
-      #   /Wall  ：开启所有警告（含 CRT/STL 内部警告，噪音较多）
-      #   /WX-   ：警告不转错误，保证有警告时编译仍能出产物
-      #   /wd    ：屏蔽 MFC/STL/spdlog 自身产生的噪音警告：
-      #     4100 未引用形参  4127 常量条件  4191 不安全转换
-      #     4242/4244 截断  4514 内联删除  4571 catch(...)语义
-      #     4619 pragma 警告号不存在  4625/4626/5026/5027 特殊成员
-      #     4668 未定义宏当0  4710/4711 内联决策  4820 结构体填充
-      #     4946 reinterpret_cast  5045 Spectre缓解建议
-      - name: Inject /Wall into vcxproj
+      # ── 6. 改用 spdlog 静态 triplet，彻底消除 fmt.dll 运行时依赖 ─
+      #   x86-windows        → spdlog/fmt 动态链接（需要 fmt.dll）❌
+      #   x86-windows-static → spdlog/fmt 全部静态链入 .exe         ✅
+      #   同时把 CRT 也静态链接（/MT），这样 .exe 在无 VC 运行时的机器也能跑
+      - name: Reinstall spdlog as static triplet
         shell: pwsh
         run: |
-          $f = "EnigmaHardwareID\EnigmaHardwareID.vcxproj"
+          # 重新安装静态版本（首次会编译，命中缓存则秒完）
+          C:\vcpkg\vcpkg install spdlog[wchar]:x86-windows-static --recurse
+          C:\vcpkg\vcpkg integrate install
+          Write-Host "spdlog static installed"
+
+      # ── 7. 注入 /Wall + /WX- + /MT(d) 到 vcxproj ───────────────
+      #   /Wall  ：开启所有警告（含 CRT/STL 内部警告，噪音较多）
+      #   /WX-   ：警告不转错误，保证有警告时编译仍能出产物
+      #   /MT(d) ：静态链接 CRT，与 x86-windows-static triplet 匹配
+      #   /wd    ：屏蔽 MFC/STL/spdlog 自身噪音警告
+      #     4100 未引用形参  4127 常量条件  4191 不安全转换
+      #     4242/4244 截断  4514 内联删除  4571 catch(...)语义
+      #     4619 pragma警告号不存在  4625/4626/5026/5027 特殊成员
+      #     4668 未定义宏当0  4710/4711 内联决策  4820 结构体填充
+      #     4946 reinterpret_cast  5045 Spectre缓解建议
+      - name: Inject /Wall + static CRT + x86-windows-static into vcxproj
+        shell: pwsh
+        run: |
+          $f    = "EnigmaHardwareID\EnigmaHardwareID.vcxproj"
+          $xml  = Get-Content $f -Raw
+
+          # 1) 警告开关
           $wall = '/Wall /WX- /wd4100 /wd4127 /wd4191 /wd4242 /wd4244 ' +
                   '/wd4514 /wd4571 /wd4619 /wd4625 /wd4626 /wd4668 ' +
                   '/wd4710 /wd4711 /wd4820 /wd4946 /wd5026 /wd5027 /wd5045 ' +
                   '%(AdditionalOptions)'
-          # 替换 vcxproj 里原有的 /utf-8 %(AdditionalOptions) 占位
-          (Get-Content $f -Raw) `
-            -replace '/utf-8 %\(AdditionalOptions\)',
-                     "/utf-8 $wall" |
-            Set-Content $f -Encoding UTF8
-          Write-Host "/Wall injected"
+          $xml = $xml -replace '/utf-8 %\(AdditionalOptions\)', "/utf-8 $wall"
 
-      # ── 7. 编译，日志同时输出到终端和文件 ───────────────────────
+          # 2) CRT：Release → /MT，Debug → /MTd（与 x86-windows-static 匹配）
+          $xml = $xml -replace '<RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>',
+                               '<RuntimeLibrary>MultiThreaded</RuntimeLibrary>'
+          $xml = $xml -replace '<RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>',
+                               '<RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>'
+          # 若原文件没有 RuntimeLibrary 节点则在 ClCompile 末尾补上
+          if ($xml -notmatch '<RuntimeLibrary>') {
+            $xml = $xml -replace '(<ClCompile>)', '$1<RuntimeLibrary Condition="''$(Configuration)''==''Release''">MultiThreaded</RuntimeLibrary><RuntimeLibrary Condition="''$(Configuration)''==''Debug''">MultiThreadedDebug</RuntimeLibrary>'
+          }
+
+          # 3) vcpkg triplet → static
+          $xml = $xml -replace '<VcpkgTriplet>x86-windows</VcpkgTriplet>',
+                               '<VcpkgTriplet>x86-windows-static</VcpkgTriplet>'
+
+          Set-Content $f $xml -Encoding UTF8
+          Write-Host "/Wall + static CRT + static triplet injected"
+
+      # ── 8. 编译，日志同时输出到终端和文件 ───────────────────────
       #   /v:detailed ：完整详细日志（含每个 cl.exe 命令行参数）
       #   /flp        ：同步写入 build.log 文件（UTF-8，含警告/错误行）
       #   Tee-Object  ：让日志实时显示在 Actions 面板，同时写文件
@@ -111,7 +139,7 @@ jobs:
           # 保留 msbuild 真实退出码（Tee-Object 会覆盖 $LASTEXITCODE）
           exit $LASTEXITCODE
 
-      # ── 8. 从日志提取 warning/error 摘要并打印到 Actions 面板 ──
+      # ── 9. 从日志提取 warning/error 摘要并打印到 Actions 面板 ──
       #   即使编译失败也运行（if: always()），方便排错
       - name: Print warnings & errors summary
         if: always()
@@ -136,7 +164,7 @@ jobs:
             Write-Host "✅ No warnings or errors found."
           }
 
-      # ── 9. 确认产物路径 ──────────────────────────────────────────
+      # ── 10. 确认产物路径 ─────────────────────────────────────────
       - name: Show output files
         if: success()
         shell: pwsh
@@ -148,7 +176,22 @@ jobs:
             Write-Host "Output dir not found: $dir"; exit 1
           }
 
-      # ── 10. 上传编译产物 + 完整日志 ─────────────────────────────
+      # ── 11. 打印 bin 目录完整文件清单（确认无遗漏 dll）────────────
+      - name: List bin directory
+        if: always()
+        shell: pwsh
+        run: |
+          $dir = "bin\${{ matrix.config }}"
+          if (Test-Path $dir) {
+            Write-Host "── 产物目录：$dir ──"
+            Get-ChildItem $dir -Recurse |
+              Select-Object Name, @{N='KB';E={[math]::Round($_.Length/1KB,1)}} |
+              Format-Table -AutoSize
+          } else {
+            Write-Host "bin 目录不存在（编译失败）"
+          }
+
+      # ── 12. 上传编译产物（静态链接，单 exe 无 dll 依赖）+ 日志 ──
       - name: Upload artifact + build log
         if: always()      # 编译失败时日志更重要，照样上传
         uses: actions/upload-artifact@v4
